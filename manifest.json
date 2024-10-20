@@ -13,7 +13,11 @@
   },
   "content_scripts": [
     {
-        "js": ["solver.js"],
+        "js": [
+            "gridCellClasses.js",
+            "cellElementToCellObject.js",
+            "solver.js"
+        ],
         "matches": [
             "https://www.puzzle-pipes.com/*"
         ]
