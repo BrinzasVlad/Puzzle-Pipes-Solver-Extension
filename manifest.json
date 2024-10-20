@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Puzzle-Pipes Solver",
+  "description": "An extension that scans and solves puzzles at puzzle-pipes.com",
+  "version": "1.0",
+  "action": {
+    "default_popup": "pipesSolverPopup.html"
+  },
+  "icons": {
+    "32": "icon-32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "content_scripts": [
+    {
+        "js": ["solver.js"],
+        "matches": [
+            "https://www.puzzle-pipes.com/*"
+        ]
+    }
+  ]
+}
