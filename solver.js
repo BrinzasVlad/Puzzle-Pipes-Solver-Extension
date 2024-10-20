@@ -64,14 +64,5 @@ for (let colIndex = 0; colIndex < GRID_HEIGHT; ++colIndex) {
     grid.push(currentRow);
 }
 
-// Form a string representation of the grid, just because:
-let stringifiedGrid = "";
-for (let colIndex = 0; colIndex < GRID_HEIGHT; ++colIndex) {
-    for (let rowIndex = 0; rowIndex < GRID_WIDTH; ++rowIndex) {
-        stringifiedGrid += grid[colIndex][rowIndex];
-    }
-    stringifiedGrid += '\n';
-}
-
-// Try showing it to be sure:
-alert("Your grid should look like this:\n" + stringifiedGrid);
+// Log stringified grid for easy checking (and style points)
+console.log("Your grid should look like this:\n" + stringifyGrid(grid, GRID_HEIGHT, GRID_WIDTH));

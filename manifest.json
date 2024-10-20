@@ -16,6 +16,7 @@
         "js": [
             "gridCellClasses.js",
             "cellElementToCellObject.js",
+            "stringifyGrid.js",
             "solver.js"
         ],
         "matches": [
