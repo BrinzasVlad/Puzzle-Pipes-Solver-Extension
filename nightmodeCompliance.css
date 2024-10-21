@@ -1,0 +1,6 @@
+/* Need to declare this manually, because puzzle-pipes.com marks their
+   menu buttons with this by class AND ID, and obviously buttons we add
+   won't be in their list of ids */
+.pipesSolver.button.nightmode {
+    background-color: #CCC;
+}

@@ -17,8 +17,10 @@
             "gridCellClasses.js",
             "cellElementToCellObject.js",
             "stringifyGrid.js",
-            "solver.js"
+            "solver.js",
+            "menuInjector.js"
         ],
+        "css": [ "nightmodeCompliance.css" ],
         "matches": [
             "https://www.puzzle-pipes.com/*"
         ]
