@@ -3,49 +3,41 @@
 /// DOM element access, and other utils
 class AbstractGridCell {
     DOMElement; // the actual cell in the HTML DOM corresponding to this
-    blockedDirections; // directions (as per enum) in which this cell CANNOT connect
-    forcedDirections; // directions (as per enum) in which this cell MUST connect
     facingDirection; // direction this cell is facing; in the "default" look, cell is facing DOWN
+    isPinned; // whether this cell is pinned (marked as "correct" and uneditable) on the grid
+    neighbours; // neighbour cells in each direction
+    solveStrategies = []; // list of strategies for solving this cell; subclasses should populate in constructor
 
-    constructor(cellDOMElement, facingDirection) {
+    // TODO: Neighbours must be added separately, which is a bit smelly
+    constructor(cellDOMElement, facingDirection, isPinned = false) {
         this.DOMElement = cellDOMElement;
-        this.blockedDirections = new Set();
-        this.forcedDirections = new Set();
         this.facingDirection = facingDirection;
+        this.isLocked = isPinned;
     }
 
     rotate() {
+        console.log("Attempting to rotate cell " + this);
+        console.log("Internal direction: " + this.facingDirection);
         this.DOMElement.click(); // Rotates clockwise once, as per current puzzle-pipes.com functionality
         this.facingDirection = Directions.rotateClockwise(this.facingDirection);
+        console.log("New direction: ", this.facingDirection);
     }
 
-    handleBlockedDirection(direction) {
-        console.log("Abstract method handleBlockedDirection used! You should override it!");
-    }
-    blockDirection(direction) {
-        if(!Object.values(Directions).includes(direction)) {
-            console.log("Was requested to block invalid direction " + direction);
-        }
-        this.blockedDirections.add(direction);
-        this.handleBlockedDirection(direction);
-    }
+    togglePinned() {
+        // FIXME: currently sending anything other than a click() command DOES NOT WORK
+        // This is a limitation of Chrome Extensions, and is unlikely to be overcome
+        // As such, this part will not work, so the user won't get visual updates on this
+        const rightClickEvent = new MouseEvent("contextmenu", { button: 2 });
+        this.DOMElement.dispatchEvent(rightClickEvent);
 
-    handleForcedDirection(direction) {
-        console.log("Abstract method handleForcedDirection used! You should override it!");
-    }
-    forceDirection(direction) {
-        if(!Object.values(Directions).includes(direction)) {
-            console.log("Was requested to force invalid direction " + direction);
-        }
-        this.forcedDirections.add(direction);
-        this.handleForcedDirection(direction);
+        this.isPinned = !this.isPinned;
     }
 }
 
-/// Those nub-shaped cells with a single path out
+/// Those bulb-shaped cells with a single path out
 /// In default look, cell is facing DOWN and that's the
 /// direction the single path out points
-class NubCell extends AbstractGridCell {
+class BulbCell extends AbstractGridCell {
     constructor(cellDOMElement, facingDirection) {
         super(cellDOMElement, facingDirection);
     }

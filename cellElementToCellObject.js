@@ -9,14 +9,14 @@ const cellElementToCellObject = function(cellDOMElement) {
         ["cell-1", 3]
     ]);
     const pipeClassToCellClassAndStartingRotations = new Map([
-        ["pipe1",  { cls: NubCell,      rot: 3 }],
-        ["pipe2",  { cls: NubCell,      rot: 2 }],
+        ["pipe1",  { cls: BulbCell,      rot: 3 }],
+        ["pipe2",  { cls: BulbCell,      rot: 2 }],
         ["pipe3",  { cls: ElbowCell,    rot: 0 }],
-        ["pipe4",  { cls: NubCell,      rot: 1 }],
+        ["pipe4",  { cls: BulbCell,      rot: 1 }],
         ["pipe5",  { cls: LineCell,     rot: 1 }],
         ["pipe6",  { cls: ElbowCell,    rot: 3 }],
         ["pipe7",  { cls: ThreeWayCell, rot: 2 }],
-        ["pipe8",  { cls: NubCell,      rot: 0 }],
+        ["pipe8",  { cls: BulbCell,      rot: 0 }],
         ["pipe9",  { cls: ElbowCell,    rot: 1 }],
         ["pipe10", { cls: LineCell,     rot: 0 }],
         ["pipe11", { cls: ThreeWayCell, rot: 3 }],
@@ -45,5 +45,8 @@ const cellElementToCellObject = function(cellDOMElement) {
     const totalRotations = clockwiseRotationsFromRotationClass + clockwiseRotationsFromPipeClass;
     const cellFacingDirection = Directions.rotateClockwise(Directions.DOWN, totalRotations);
 
-    return new CellClassToCreate(cellDOMElement, cellFacingDirection);
+    // Figure out whether cell is pinned or not
+    const isCellPinned = cellDOMElement.classList.contains("pinned");
+
+    return new CellClassToCreate(cellDOMElement, cellFacingDirection, isCellPinned);
 }
