@@ -31,13 +31,13 @@ const gridCellElements = boardElement.getElementsByClassName("cell");
 
 // Define some useful enums
 const Directions = Object.freeze({
-    UP: Symbol("up"),
-    DOWN: Symbol("down"),
-    LEFT: Symbol("left"),
-    RIGHT: Symbol("right"),
+    UP: "UP",
+    DOWN: "DOWN",
+    LEFT: "LEFT",
+    RIGHT: "RIGHT",
 
     // TODO: might be bad practice to put this function here?
-    rotateClockwise(direction, times) {
+    rotateClockwise(direction, times = 1) {
         const cycle = [this.UP, this.RIGHT, this.DOWN, this.LEFT];
         const initialIndex = cycle.indexOf(direction);
         if(-1 === initialIndex) return null; // not a valid direction
