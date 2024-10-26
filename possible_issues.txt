@@ -1,0 +1,16 @@
+1. Since we deduce grid size by measuring the grid, the IN-GAME zoom function probably causes major issues
+   Possible fix: deduce grid size by:
+   - reading the puzzleInfo box (problem: won't work on daily/weekly puzzles since their box doesn't state dimensions)
+   - counting the number of grid cells and taking square root (problem: won't work on non-square puzzles (none yet))
+2. solver.js is too bloated
+   Possible things to move:
+   - grid reading into its own method/file
+3. cannot trigger proper right-click event to pin cells
+   Possible fix:
+   - use WASD to navigate to it and Space to pin (requires triggering key presses to work, may require Tab first)
+   - ignoring the issue and simply not pinning the cells at all (just arranging them correctly)
+4. cannot triger LEFT-CLICK event to rotate cells, either
+   Possible workaround:
+   - highlight the cell, tell user what to do with it
+   Possible alternative:
+   - scrap this concept as an extension and turn it into a script of some kind?
