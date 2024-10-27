@@ -1,8 +1,8 @@
-const stringifyGrid = function(grid, gridHeight, gridWidth, newlineDelimiter = '\n') {
+const stringifyGrid = function(grid, newlineDelimiter = '\n') {
     let stringifiedGrid = "";
 
-    for (let colIndex = 0; colIndex < gridHeight; ++colIndex) {
-        for (let rowIndex = 0; rowIndex < gridWidth; ++rowIndex) {
+    for (let colIndex = 0; colIndex < grid.height; ++colIndex) {
+        for (let rowIndex = 0; rowIndex < grid.width; ++rowIndex) {
             stringifiedGrid += grid[colIndex][rowIndex];
         }
         stringifiedGrid += newlineDelimiter;

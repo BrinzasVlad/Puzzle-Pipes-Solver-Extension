@@ -14,8 +14,10 @@
   "content_scripts": [
     {
         "js": [
+            "directions.js",
             "gridCellClasses.js",
             "cellElementToCellObject.js",
+            "scanGrid.js",
             "stringifyGrid.js",
             "solver.js",
             "menuInjector.js"
