@@ -59,6 +59,24 @@ solverMenuPanel.id = "solverMenuPanel";
         showGridSubPanel.appendChild(gridDisplayDiv);
     solverMenuPanel.appendChild(showGridSubPanel);
 
+    const solveCellTestButton = createPipesSolverElement("button");
+    solveCellTestButton.classList.add("button");
+    solveCellTestButton.id = "solveTestButton";
+    solveCellTestButton.innerText = "Test Solve";
+    solveCellTestButton.onclick = (clickEvent) => {
+        // Without preventDefault(), puzzle-pipes.com refreshes the page sort-of,
+        // which erases our nicely-added ASCII display
+        clickEvent.preventDefault();
+
+        grid = scanGrid(); // Rescan grid
+        
+        const isSolveSuccessful = grid[0][0].attemptSolve();
+        console.log("Was the solve successful? " + (isSolveSuccessful ? "Yes" : "No"));
+        console.log("Tile is now " + (grid[0][0].isPinned ? "" : "NOT " + "pinned."));
+        console.log("Tile correct position: " + grid[0][0]);
+    }
+    solverMenuPanel.appendChild(solveCellTestButton);
+
 // ---------------------------------------------------------------
 // | Step 3: Insert our own buttons panel below the current ones |
 // ---------------------------------------------------------------
