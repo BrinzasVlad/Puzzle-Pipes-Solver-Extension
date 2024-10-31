@@ -22,6 +22,21 @@ class AbstractGridCell {
         this.DOMElement = cellDOMElement;
         this.facingDirection = facingDirection;
         this.isPinned = isPinned;
+
+        // Extra setup for non-Wall cells
+        if(this.DOMElement) {
+            // Add listeners to stay in sync with grid
+            this.DOMElement.addEventListener("click", () => {
+                this.facingDirection = Directions.rotateClockwise(this.facingDirection);
+                console.log("Caught a click!");
+            });
+            // FIXME: this does NOT cover rotating via selector
+            // FIXME: it's possible Ctrl-Click does a reverse rotate instead
+            this.DOMElement.addEventListener("contextmenu", () => {
+                this.isPinned = !this.isPinned;
+                console.log("Caught a right-click!");
+            })
+        }
     }
 
     rotate() {
@@ -158,6 +173,33 @@ class BulbCell extends AbstractGridCell {
 class LineCell extends AbstractGridCell {
     constructor(cellDOMElement, facingDirection, isPinned) {
         super(cellDOMElement, facingDirection, isPinned);
+        
+        // FIXME: feels wrong to declare these in the constructor
+        this.solveStrategies.push(
+            // AnyOneDirectionConnected strategy
+            (lineCell) => {
+                for (const direction of Directions) {
+                    const backwardsDirection = Directions.opposite(direction);
+                    if (lineCell.neighbours[direction].hasConnection(backwardsDirection) === true) {
+                        // Neighbour is pointing at us
+                        return direction;
+                    }
+                }
+                return null;
+            },
+            // AnyOneDirectionBlocked strategy
+            (lineCell) => {
+                for (const direction of Directions) {
+                    const backwardsDirection = Directions.opposite(direction);
+                    if (lineCell.neighbours[direction].hasConnection(backwardsDirection) === false) {
+                        // Neighbour walls us out
+                        // So we must be perpendicular to its direction
+                        return Directions.rotateClockwise(direction);
+                    }
+                }
+                return null;
+            }
+        );
     }
 
     toString() {
@@ -192,6 +234,87 @@ class LineCell extends AbstractGridCell {
 class ElbowCell extends AbstractGridCell {
     constructor(cellDOMElement, facingDirection, isPinned) {
         super(cellDOMElement, facingDirection, isPinned);
+        
+        // FIXME: feels wrong to declare these in the constructor
+        this.solveStrategies.push(
+            // AnyTwoConsecutiveDirectionsConnected strategy
+            (elbowCell) => {
+                for (const direction of Directions) {
+                    const backwardsDirection = Directions.opposite(direction);
+                    if (elbowCell.neighbours[direction].hasConnection(backwardsDirection) === true) {
+                        const consecutiveDirection = Directions.rotateClockwise(direction);
+                        const backwardsConsecutiveDirection = Directions.opposite(consecutiveDirection);
+                        if (elbowCell.neighbours[consecutiveDirection]
+                            .hasConnection(backwardsConsecutiveDirection) === true) {
+                                // Two consecutive directions, elbow can be pinned
+                                // Based on the 'default look', elbow cell must point in
+                                // OPPOSITE direction from the first connection
+                                // (e.g. if connected UP and RIGHT, elbow points DOWN)
+                                return Directions.opposite(direction);
+                            }
+                    }
+                }
+                return null;
+            },
+            // AnyTwoConsecutiveDirectionsBlocked strategy
+            (elbowCell) => {
+                for (const direction of Directions) {
+                    const backwardsDirection = Directions.opposite(direction);
+                    if (elbowCell.neighbours[direction].hasConnection(backwardsDirection) === false) {
+                        const consecutiveDirection = Directions.rotateClockwise(direction);
+                        const backwardsConsecutiveDirection = Directions.opposite(consecutiveDirection);
+                        if (elbowCell.neighbours[consecutiveDirection]
+                            .hasConnection(backwardsConsecutiveDirection) === false) {
+                                // Two consecutive directions, elbow can be pinned
+                                // If two directions are blocked, the other two
+                                // (opposites of these two) must be connected.
+                                // So if e.g. DOWN and LEFT are blocked, then
+                                // UP and RIGHT must be connected, so based on
+                                // the 'default look' elbow must point DOWN
+                                // So the correct facing direction is the same
+                                // as the first blocked direction
+                                return direction;
+                            }
+                    }
+                }
+                return null;
+            },
+            // OneDirectionConnectedPlusAdjacentBlocked strategy
+            (elbowCell) => {
+                for (const direction of Directions) {
+                    const backwardsDirection = Directions.opposite(direction);
+                    if (elbowCell.neighbours[direction].hasConnection(backwardsDirection) === true) {
+                        const directionClockwise = Directions.rotateClockwise(direction);
+                        const backwardsDirectionClockwise = Directions.opposite(directionClockwise);
+                        if (elbowCell.neighbours[directionClockwise]
+                            .hasConnection(backwardsDirectionClockwise) === false
+                        ) {
+                            // Next direction clockwise is blocked, elbow
+                            // must connect towards original direction and
+                            // the counterclockwise neighbour.
+                            // So based on the 'default look', elbow must point
+                            // towards the clockwise direction.
+                            return directionClockwise;
+                        }
+                        
+                        const directionCounterclockwise = Directions.rotateCounterclockwise(direction);
+                        const backwardsDirectionCounterclockwise = Directions.opposite(directionCounterclockwise);
+                        if (elbowCell.neighbours[directionCounterclockwise]
+                            .hasConnection(backwardsDirectionCounterclockwise) === false
+                        ) {
+                            // Previous direction counterclockwise is blocked,
+                            // so elbow must connect towards original direction
+                            // and the clockwise neighbour.
+                            // Based on 'default look', elbow must point towards
+                            // the NEXT clockwise direction, which is the
+                            // opposite of the original direction.
+                            return Directions.opposite(direction);
+                        }
+                    }
+                }
+                return null;
+            }
+        );
     }
 
     toString() {
@@ -224,6 +347,40 @@ class ElbowCell extends AbstractGridCell {
 class ThreeWayCell extends AbstractGridCell {
     constructor(cellDOMElement, facingDirection, isPinned) {
         super(cellDOMElement, facingDirection, isPinned);
+
+        // FIXME: feels wrong to declare these in the constructor
+        this.solveStrategies.push(
+            // AnyOneDirectionBlocked strategy
+            (threeWayCell) => {
+                for (const direction of Directions) {
+                    const backwardsDirection = Directions.opposite(direction);
+                    if (threeWayCell.neighbours[direction].hasConnection(backwardsDirection) === false) {
+                        // Direction is blocked, T-cell must face
+                        // in the opposite direction.
+                        return Directions.opposite(direction);
+                    }
+                }
+                return null;
+            },
+            // ThreeDirectionsConnected strategy
+            (threeWayCell) => {
+                const directionsNotConnected = new Set(Directions.all());
+                for (const direction of Directions) {
+                    const backwardsDirection = Directions.opposite(direction);
+                    if (threeWayCell.neighbours[direction].hasConnection(backwardsDirection) === true) {
+                        // Neighbour has connection this way
+                        directionsNotConnected.delete(direction);
+                    }
+                }
+                if (1 == directionsNotBlocked.size) {
+                    // Last direction remaining must be blocked
+                    // So T-cell must face in the opposite direction.
+                    const [lastDirectionRemaining] = directionsNotConnected;
+                    return Directions.opposite(lastDirectionRemaining);
+                }
+                return null;
+            }
+        );
     }
 
     toString() {
