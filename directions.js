@@ -13,7 +13,8 @@ const Directions = Object.freeze({
     	return this.all()[Symbol.iterator]();
     },
 
-    // TODO: might be bad practice to put this function here?
+    // TODO: might be bad practice to put these functions here?
+
     rotateClockwise(direction, times = 1) {
         const cycle = [this.UP, this.RIGHT, this.DOWN, this.LEFT];
         const initialIndex = cycle.indexOf(direction);
@@ -22,6 +23,10 @@ const Directions = Object.freeze({
         const finalIndex = (initialIndex + times) % 4;
 
         return cycle[finalIndex];
+    },
+
+    rotateCounterclockwise(direction, times = 1) {
+        return this.rotateClockwise(direction, 4 - times);
     },
 
     opposite(direction) {
