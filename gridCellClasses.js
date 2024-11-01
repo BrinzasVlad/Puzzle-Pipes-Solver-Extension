@@ -337,7 +337,21 @@ class ElbowCell extends AbstractGridCell {
             }
             else return false;
         }
-        else return null;
+        else {
+            // If an elbow cell is NOT pinned but its opposite direction
+            // is fixed (be it connected or blocked), we can give partial
+            // information.
+            // e.g. if neighbour UP has connection with this cell, then
+            // this cell must have a connection UP, and so it cannot have
+            // a connection DOWN, even if we don't know its exact position.
+            const oppositeDirection = Directions.opposite(direction);
+            const oppositeNeighbourConnectionStatus = this.neighbours[oppositeDirection].hasConnection(direction);
+            if (oppositeNeighbourConnectionStatus !== null) {
+                return !oppositeNeighbourConnectionStatus;
+            }
+        }
+        // Default to saying 'I don't know'
+        return null;
     }
 }
 
