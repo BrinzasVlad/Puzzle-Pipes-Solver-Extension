@@ -106,7 +106,7 @@ const scanGrid = function () {
             }
 
             // RIGHT neighbour
-            if (grid.width == rowIndex) {
+            if (grid.width - 1 == rowIndex) {
                 if (grid.isWrapActive) {
                     // Wrap around to leftmost cell
                     grid[colIndex][rowIndex].neighbours[Directions.RIGHT] = grid[colIndex][0];
