@@ -17,3 +17,10 @@
 5. tracking keyboard inputs to keep the internal board in sync might be hard, because the cursor has no DOM-visible presence I can see
    Possible hackaround:
    - track for keyboard inputs (at least rotate / pin) and have all cells re-check themselves when they happen
+6. the check-ahead code for deciding whether a direction is connected/blocked in cells like elbow cells can infinite-loop if there is an entire wrapped row/column of them
+   Possible fix:
+   - when doing the look-ahead, mark cells that have been checked (and terminate if finding one again)
+7. not 100% an 'issue', more of an 'unintuitive for user' matter: because of the look-ahead on connections (e.g. 'I know this elbow cell must have a connection this way because its opposite direction is blocked), the solver often solves things in an unintuitive manner, like solving a cell using look-ahead before solving the easy-to-solve elbow cell next to it
+   Possible fix:
+   - run a first run of solve attempts *without* look-ahead, and only try look-ahead if that fails?
+   - some kind of special 'if we found a solution WITH look-ahead, check to make sure there isn't a more obvious one nearby' verification?
