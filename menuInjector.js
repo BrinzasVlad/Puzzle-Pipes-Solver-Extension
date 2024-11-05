@@ -70,6 +70,12 @@ solverMenuPanel.id = "solverMenuPanel";
         solveOneCellButton.classList.add("button");
         solveOneCellButton.id = "solveOneCellButton";
         solveOneCellButton.innerText = "Solve One Cell";
+
+        // Keep track of already-solved-and-highlighted cells
+        // so as to not pick them again when clicking the button.
+        // Using a set for handy remove (and as a just-in-case
+        // guard against double adding).
+        const currentlyHighlightedCellIndices = new Set();
         solveOneCellButton.onclick = (clickEvent) => {
             // Without preventDefault(), puzzle-pipes.com refreshes the page sort-of,
             // which erases our nicely-added ASCII display
@@ -82,10 +88,21 @@ solverMenuPanel.id = "solverMenuPanel";
             
             // Iterate through all cells in grid
             let solvedOne = false;
-            for (let cellIndex = 0; cellIndex < grid.height * grid.width; ++cellIndex) {
+            const totalCells = grid.height * grid.width;
+
+            // Start from a random index for a more natural user experience
+            // Loop index around if it goes past the maximum index
+            for (
+                let cellsChecked = 0, cellIndex = Math.floor(Math.random() * totalCells);
+                cellsChecked < totalCells;
+                ++cellsChecked, cellIndex = (cellIndex + 1) % totalCells
+            ) {
                 const colIndex = Math.floor(cellIndex / grid.width);
                 const rowIndex = cellIndex % grid.width;
                 const currentCell = grid[colIndex][rowIndex];
+
+                // If cell is already highlighted, skip it (it's already solved)
+                if (currentlyHighlightedCellIndices.has(cellIndex)) continue;
 
                 // Try solving this cell
                 const correctFacingDirection = currentCell.attemptSolve();
@@ -104,6 +121,9 @@ solverMenuPanel.id = "solverMenuPanel";
                       + currentCell.rotationsNeededToFaceDirection(correctFacingDirection)
                       + "-away";
                     solvedCellDOMElement.classList.add(initialHighlightClass);
+
+                    // Add cell to highlighted cells set
+                    currentlyHighlightedCellIndices.add(cellIndex);
 
                     // Update highlight as user rotates cell
                     // FIXME: update listener does NOT cover cell rotate via keyboard
@@ -127,6 +147,8 @@ solverMenuPanel.id = "solverMenuPanel";
                             const currentHightlightClass = "pipesSolverHighlight-" + rotationsStillNeeded + "-away";
 
                             solvedCellDOMElement.classList.remove(currentHightlightClass);
+                            currentlyHighlightedCellIndices.delete(cellIndex);
+
                             solvedCellDOMElement.removeEventListener("click", updateHighlightListener);
                             solvedCellDOMElement.removeEventListener("contextmenu", removeHighlightListener);
                         }
