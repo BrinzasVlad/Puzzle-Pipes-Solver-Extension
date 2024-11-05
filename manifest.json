@@ -22,7 +22,7 @@
             "solver.js",
             "menuInjector.js"
         ],
-        "css": [ "nightmodeCompliance.css" ],
+        "css": [ "pipesSolver.css" ],
         "matches": [
             "https://www.puzzle-pipes.com/*"
         ]
