@@ -58,6 +58,49 @@ class AbstractGridCell {
         return null;
     }
 
+    // Tests whether there is currently a path of pinned cells
+    // connecting this cell and the given cell, i.e. if this
+    // cell and the other cell are CERTAINLY connected based
+    // only on the pinned cells so far.
+    //
+    // Be warned that this function is slow, since it needs to
+    // check potentially a large portion of the grid by
+    // "flooding" it.
+    isCurrentlyConnectedTo(targetCell) {
+        function recursiveCheck(currentCell, directionToIgnore) {
+            let directionsToCheck = Directions.all().filter((dir) => dir !== directionToIgnore);
+            for (let direction of directionsToCheck) {
+                const neighbourInDirection = currentCell.neighbours[direction];
+                const oppositeDirection = Directions.opposite(direction);
+                if (currentCell.hasConnection(direction) || neighbourInDirection.hasConnection(oppositeDirection)) {
+                    // If this cell is connected to the next one (or that one to this)...
+                    if (currentCell.neighbours[direction] === targetCell) {
+                        // We found the target cell, so it is connected
+                        return true;
+                    }
+                    else {
+                        // Check again from our certainly-connected neighbour
+                        // Ignore checking back this way; it's already checked
+                        //
+                        // No need to worry about indirect loops, since the
+                        // puzzle rules already forbid them.
+                        // TODO: this *might* happen if the player pinned some tiles incorrectly
+                        // So it would ideally be nice to check for it nonetheless, or at
+                        // least have a 'hacky' solution like a maximum recursion depth.
+                        if (true === recursiveCheck(neighbourInDirection, oppositeDirection)) return true;
+                    }
+                }
+            }
+
+            // If we didn't find it in any direction, it does not exist
+            // down this brach of the sub-tree.
+            return false;
+        }
+
+        // Start the search by checking in all directions from here
+        return recursiveCheck(this);
+    }
+
     // Attempts to determine the correct position of this cell
     //
     // If the cell was solved, returns a non-DOM-attached cell object that
@@ -336,7 +379,7 @@ class ElbowCell extends AbstractGridCell {
                 }
                 return null; 
             },
-            // TsOrElbowsWithCommonBaseMustFaceAway strategy
+            // TsOrElbowsWithCommonBaseMustFaceAwayFast strategy
             (elbowCell) => {
                 for (const direction of Directions) {
                     const neighbour = elbowCell.neighbours[direction];
@@ -378,6 +421,63 @@ class ElbowCell extends AbstractGridCell {
                                 else {
                                     // It means it's the opposite - first is 90° clockwise from second
                                     return Directions.opposite(secondConnectedDirection);
+                                }
+                            }
+                        }
+                    }
+                }
+                return null;
+            },
+            // TsOrElbowsWithCommonBaseMustFaceAwayComprehensive strategy
+            (elbowCell) => {
+                for (const direction of Directions) {
+                    const neighbour = elbowCell.neighbours[direction];
+                    if (neighbour instanceof ElbowCell || neighbour instanceof ThreeWayCell) {
+                        const oppositeDirection = Directions.opposite(direction);
+
+                        // If this cell and the other are not already directly connected...
+                        // ...but it's POSSIBLE they could be...
+                        // (i.e. the connection is neither already confirmed nor already blocked)
+                        if (null === elbowCell.hasConnection(direction)
+                         && null === neighbour.hasConnection(oppositeDirection)) {
+                            // ...and they ARE connected indirectly...
+                            if (elbowCell.isCurrentlyConnectedTo(neighbour)) {
+                                // Then they MAY NOT connect directly
+                                // Otherwise they would form a closed loop
+
+                                // Since this is an elbow cell, we'll need to figure out
+                                // which other direction this cell is connected towards
+                                // (there must be at least one, since otherwise we wouldn't
+                                // have been able to confirm the indirect connection)
+                                // so we can decide this cell's facing.
+                                
+                                // Possible directions are clockwise or counterclockwise
+                                // relative to the indirectly-connected neighbour
+                                // (directly opposite is impossible, else we'd have
+                                // known the link to the neighbour is certainly blocked).
+
+                                // Clockwise from neighbour
+                                const clockwiseDirection = Directions.rotateClockwise(direction);
+                                let oppositeDirection = Directions.opposite(clockwiseDirection);
+                                if (elbowCell.hasConnection(clockwiseDirection)
+                                 || elbowCell.neighbours[clockwiseDirection].hasConnection[oppositeDirection]) {
+                                    // If, e.g., the indirectly-connected neighbour was LEFT
+                                    // then we are now connected UP (clockwise) and RIGHT (opposite)
+                                    // so as per 'default look' the facing direction to return is
+                                    // DOWN (opposite direction from clockwise connection)
+                                    return oppositeDirection;
+                                }
+
+                                // Counterclockwise from neighbour
+                                const counterclockwiseDirection = Directions.rotateCounterclockwise(direction);
+                                oppositeDirection = Directions.opposite(counterclockwiseDirection);
+                                if (elbowCell.hasConnection(counterclockwiseDirection)
+                                 || elbowCell.neighbours[counterclockwiseDirection].hasConnection[oppositeDirection]) {
+                                    // If, e.g., the indirectly-connected neighbour was DOWN
+                                    // then we are now connected RIGHT (counterclockwise) and
+                                    // UP (opposite) so as per 'default look' the facing direction
+                                    // to return is DOWN (same as indirect neighbour)
+                                    return direction;
                                 }
                             }
                         }
@@ -465,7 +565,7 @@ class ThreeWayCell extends AbstractGridCell {
                 }
                 return null;
             },
-            // TsOrElbowsWithCommonBaseMustFaceAway strategy
+            // TsOrElbowsWithCommonBaseMustFaceAwayFast strategy
             (threeWayCell) => {
                 for (const direction of Directions) {
                     const neighbour = threeWayCell.neighbours[direction];
@@ -496,6 +596,31 @@ class ThreeWayCell extends AbstractGridCell {
                                 // Therefore, this cell must point the opposite direction
                                 // from the other elbow/three-way cell, as per 'default look'
                                 return Directions.opposite(direction);
+                            }
+                        }
+                    }
+                }
+                return null;
+            },
+            // TsOrElbowsWithCommonBaseMustFaceAwayComprehensive strategy
+            (threeWayCell) => {
+                for (const direction of Directions) {
+                    const neighbour = threeWayCell.neighbours[direction];
+                    if (neighbour instanceof ElbowCell || neighbour instanceof ThreeWayCell) {
+                        const oppositeDirection = Directions.opposite(direction);
+                        
+                        // If this cell and the other are not already directly connected...
+                        // ...but it's POSSIBLE they could be...
+                        // (i.e. the connection is neither already confirmed nor already blocked)
+                        if (null === threeWayCell.hasConnection(direction)
+                         && null === neighbour.hasConnection(oppositeDirection)) {
+                            // ...but they ARE connected indirectly...
+                            if (threeWayCell.isCurrentlyConnectedTo(neighbour)) {
+                                // Then they MAY NOT connect directly
+                                // Otherwise they would form a closed loop
+                                // Therefore, this cell must point in the opposite
+                                // direction, as per 'default look'
+                                return oppositeDirection;
                             }
                         }
                     }
