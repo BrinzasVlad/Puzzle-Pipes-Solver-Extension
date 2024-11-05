@@ -14,3 +14,6 @@
    - highlight the cell, tell user what to do with it
    Possible alternative:
    - scrap this concept as an extension and turn it into a script of some kind?
+5. tracking keyboard inputs to keep the internal board in sync might be hard, because the cursor has no DOM-visible presence I can see
+   Possible hackaround:
+   - track for keyboard inputs (at least rotate / pin) and have all cells re-check themselves when they happen
