@@ -27,7 +27,7 @@ class AbstractGridCell {
         if(this.DOMElement) {
             // Add listeners to stay in sync with grid
             this.DOMElement.addEventListener("click", () => {
-                this.rotate();
+                if (!this.isPinned) this.rotate();
             });
             // FIXME: this does NOT cover rotating via selector
             // FIXME: it's possible Ctrl-Click does a reverse rotate instead
@@ -43,6 +43,14 @@ class AbstractGridCell {
 
     togglePinned() {
         this.isPinned = !this.isPinned;
+    }
+
+    // Returns the number of (clockwise) rotations needed
+    // to move this cell from its current facing direction
+    // to facing in the given direction.
+    // If given an invalid direction, returns null.
+    rotationsNeededToFaceDirection(direction) {
+        return Directions.rotationsToFromClockwise(this.facingDirection, direction);
     }
 
     // Tests whether this cell has a connection in the specified direction
@@ -103,20 +111,14 @@ class AbstractGridCell {
 
     // Attempts to determine the correct position of this cell
     //
-    // If the cell was solved, returns a non-DOM-attached cell object that
-    // is pinned and has the correct direction set in, so you can call
-    // methods like toString() on it to display it to the user.
+    // If the cell was solved, returns the correct facing direction the
+    // cell should take.
+    // You can use the rotationsNeededToFaceDirection() method if the
+    // number of rotations to reach that position is needed.
     //
     // If the cell was not successfully solved OR if the cell was
     // already solved (i.e. pinned) and so no further solving is possible,
     // returns null.
-    //
-    // TODO: this is needlessly inefficient
-    // since we still do the extra setup steps in the dummy return object,
-    // like setting up solve strategies and such.
-    // Would probably be more effective to return just the correct
-    // facing direction and cell type, and then set up some code
-    // that can display that
     attemptSolve() {
         if (this.isPinned) return null; // Already solved, no change
 
@@ -124,17 +126,12 @@ class AbstractGridCell {
             const correctFacingDirection = strategy(this);
 
             if (null !== correctFacingDirection) { // Strategy returned a valid answer
-                // This feels hacky, but is a JS-legitimate way to get
-                // this object's actual class
-                const CellType = this.constructor;
-                
-                // Return cell object with null DOM element reference
-                return new CellType(null, correctFacingDirection, true);
+                return correctFacingDirection;
             }
         }
 
         // No strategies worked, cell remains unsolved
-        return false;
+        return null;
     }
 }
 
@@ -289,6 +286,17 @@ class LineCell extends AbstractGridCell {
             else return false;
         }
         else return null;
+    }
+
+    // @Override
+    // Returns the number of (clockwise) rotations needed
+    // to move this cell from its current facing direction
+    // to facing in the given direction.
+    // If given an invalid direction, returns null.
+    rotationsNeededToFaceDirection(direction) {
+        // Line cells have two facing directions that are functionally identical.
+        // So at most one 90° rotation will always suffice.
+        return super.rotationsNeededToFaceDirection(direction) % 2;
     }
 }
 

@@ -10,10 +10,30 @@
     vertical-align: top;
 }
 
-.pipesSolverHighlight.cell {
+.pipesSolverHighlight-0-away.cell {
+    background-color: forestgreen;
+}
+.nightmode .pipesSolverHighlight-0-away.cell {
     background-color: forestgreen;
 }
 
-.nightmode .pipesSolverHighlight.cell {
-    background-color: forestgreen;
+.pipesSolverHighlight-1-away.cell {
+    background-color: yellowgreen;
+}
+.nightmode .pipesSolverHighlight-1-away.cell {
+    background-color: yellowgreen;
+}
+
+.pipesSolverHighlight-2-away.cell {
+    background-color: gold;
+}
+.nightmode .pipesSolverHighlight-2-away.cell {
+    background-color: gold;
+}
+
+.pipesSolverHighlight-3-away.cell {
+    background-color: orange;
+}
+.nightmode .pipesSolverHighlight-3-away.cell {
+    background-color: orange;
 }

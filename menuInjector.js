@@ -83,32 +83,56 @@ solverMenuPanel.id = "solverMenuPanel";
             for (let cellIndex = 0; cellIndex < grid.height * grid.width; ++cellIndex) {
                 const colIndex = Math.floor(cellIndex / grid.width);
                 const rowIndex = cellIndex % grid.width;
+                const currentCell = grid[colIndex][rowIndex];
 
                 // Try solving this cell
-                const solvedCell = grid[colIndex][rowIndex].attemptSolve();
-                if (solvedCell) {
+                const correctFacingDirection = currentCell.attemptSolve();
+                if (null !== correctFacingDirection) {
                     // Indicate correct alignment
                     solveOneCellSolutionPanel.innerHTML =
-                        "You should align the cell at"
+                        "You should rotate the cell at"
                       + " [" + (colIndex + 1) + ", " + (rowIndex + 1) + "]"
-                      + " (highlighted in green)"
-                      + " like this:"
-                      + "<br>" + solvedCell;
+                      + " until it is highlighted forest green,"
+                      + " then pin it.";
 
-                    // Highlight cell
-                    const solvedCellDOMElement = grid[colIndex][rowIndex].DOMElement;
-                    solvedCellDOMElement.classList.add("pipesSolverHighlight");
+                    // Highlight cell with correct colour
+                    const solvedCellDOMElement = currentCell.DOMElement;
+                    const initialHighlightClass = 
+                        "pipesSolverHighlight-"
+                      + currentCell.rotationsNeededToFaceDirection(correctFacingDirection)
+                      + "-away";
+                    solvedCellDOMElement.classList.add(initialHighlightClass);
 
-                    // Remove highlight on first user interaction with cell
+                    // Update highlight as user rotates cell
+                    // FIXME: update listener does NOT cover cell rotate via keyboard
+                    const updateHighlightListener = () => {
+                        const updatedHightlightClass = 
+                            "pipesSolverHighlight-"
+                            + currentCell.rotationsNeededToFaceDirection(correctFacingDirection)
+                            + "-away";
+
+                        solvedCellDOMElement.className = solvedCellDOMElement.className
+                            .replace(/pipesSolverHighlight-[0-3]-away/, updatedHightlightClass);
+                    };
+                    solvedCellDOMElement.addEventListener("click", updateHighlightListener);
+
+                    // Remove highlight (and listeners) when the user pins the cell correctly
                     // FIXME: this does NOT cover cell edit via keyboard
                     const removeHighlightListener = () => {
-                        solvedCellDOMElement.classList.remove("pipesSolverHighlight");
-                        solvedCellDOMElement.removeEventListener("click", removeHighlightListener);
-                        solvedCellDOMElement.addEventListener("contextMenu", removeHighlightListener);
-                    }
-                    solvedCellDOMElement.addEventListener("click", removeHighlightListener);
-                    solvedCellDOMElement.addEventListener("contextMenu", removeHighlightListener);
-                    // {once: true} wouldn't work, since we need to listen for either rotate OR pin
+                        const rotationsStillNeeded = currentCell.rotationsNeededToFaceDirection(correctFacingDirection);
+
+                        if (0 == rotationsStillNeeded) {
+                            const currentHightlightClass = "pipesSolverHighlight-" + rotationsStillNeeded + "-away";
+
+                            solvedCellDOMElement.classList.remove(currentHightlightClass);
+                            solvedCellDOMElement.removeEventListener("click", updateHighlightListener);
+                            solvedCellDOMElement.removeEventListener("contextmenu", removeHighlightListener);
+                        }
+                    };
+                    solvedCellDOMElement.addEventListener("contextmenu", removeHighlightListener);
+
+                    // We do NOT need to remove the listeners when the user clicks the 'solve one' button
+                    // In fact, multiple cells can be highlighted simultaneously and will track separately
 
                     // We found one solvable cell, take note and break out of loop
                     solvedOne = true;
