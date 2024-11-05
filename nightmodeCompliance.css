@@ -4,3 +4,16 @@
 .pipesSolver.button.nightmode {
     background-color: #CCC;
 }
+
+.pipesSolver.subPanel {
+    display: inline-block;
+    vertical-align: top;
+}
+
+.pipesSolverHighlight.cell {
+    background-color: forestgreen;
+}
+
+.nightmode .pipesSolverHighlight.cell {
+    background-color: forestgreen;
+}
