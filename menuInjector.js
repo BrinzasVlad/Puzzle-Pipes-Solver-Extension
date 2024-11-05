@@ -76,7 +76,9 @@ solverMenuPanel.id = "solverMenuPanel";
             clickEvent.preventDefault();
 
             grid = scanGrid(); // Rescan grid, just in case
-            // TODO: if our listeners work well, we shouldn't need to rescan here
+            // Grid is 99% of the time actually correct, but scanning is fast enough to be
+            // unnoticeable to the user, and some edge scenarios (see possible_issues.txt)
+            // sometimes can cause desyncs.
             
             // Iterate through all cells in grid
             let solvedOne = false;

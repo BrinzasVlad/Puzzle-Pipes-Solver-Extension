@@ -24,3 +24,13 @@
    Possible fix:
    - run a first run of solve attempts *without* look-ahead, and only try look-ahead if that fails?
    - some kind of special 'if we found a solution WITH look-ahead, check to make sure there isn't a more obvious one nearby' verification?
+8. the cell listeners work 99% of the time, but occasionally the script-memory grid and the actual grid go out of sync by one click; exact bug goes as follows:
+   - both pinning and rotating happen on mousedown; doing either individually is fine
+   - pressing one button, then the other after a little while but before the first is released is still fine
+     (e.g. left click down -> right click down -> right click up -> left click up)
+   - pressing left click then right click very closely after is also fine (rotates, then pins)
+   - the bug appears when PRESSING RIGHT CLICK, THEN LEFT CLICK VERY CLOSELY AFTER; when this happens, the game briefly pins the tile, then the pin is CANCELLED and the tile gets rotated (and remains unpinned); in this event, out model goes out of sync with the page, assuming that the tile got pinned (hence the rotation didn't happen); the bug also happens when the tile was initially pinned (similarly, our model assumes unpin -> rotate, while the page has the regular click cancel the right-click, meaning no pin and no rotate)
+   Possible fix:
+   - run a re-test of the board sometimes (whenever solving is 100% safe, but a bit excessive; rescanning the individual cell status after a listener trigger should also be safe-but-excessive; the most effective solution overall would probably be to specifically check for both mouse buttons in quick succession)
+   Current fix:
+   - currently we're just scanning before every solve, just in case
