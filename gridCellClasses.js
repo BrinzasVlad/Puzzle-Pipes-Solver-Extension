@@ -27,34 +27,21 @@ class AbstractGridCell {
         if(this.DOMElement) {
             // Add listeners to stay in sync with grid
             this.DOMElement.addEventListener("click", () => {
-                this.facingDirection = Directions.rotateClockwise(this.facingDirection);
-                console.log("Caught a click!");
+                this.rotate();
             });
             // FIXME: this does NOT cover rotating via selector
             // FIXME: it's possible Ctrl-Click does a reverse rotate instead
             this.DOMElement.addEventListener("contextmenu", () => {
-                this.isPinned = !this.isPinned;
-                console.log("Caught a right-click!");
+                this.togglePinned();
             })
         }
     }
 
     rotate() {
-        // FIXME: sending HTML events to the puzzle-pipes.com page currently doesn't to work
-        // (not even the click()) function, so this code won't apply and the user won't get
-        // any feedback on this change unless we display it somewhere
-        this.DOMElement.click(); // Rotates clockwise once, as per current puzzle-pipes.com functionality
-
         this.facingDirection = Directions.rotateClockwise(this.facingDirection);
     }
 
     togglePinned() {
-        // FIXME: sending HTML events to the puzzle-pipes.com page currently doesn't to work
-        // (not even the click()) function, so this code won't apply and the user won't get
-        // any feedback on this change unless we display it somewhere
-        const rightClickEvent = new MouseEvent("contextmenu", { button: 2 });
-        this.DOMElement.dispatchEvent(rightClickEvent);
-
         this.isPinned = !this.isPinned;
     }
 
@@ -71,22 +58,35 @@ class AbstractGridCell {
         return null;
     }
 
-    // Attempts to determine the correct position of this cell and align the cell as such and pin it
-    // If the cell was solved, returns true
-    // If the cell was already solved and pinned, or no solution could be found, returns false
+    // Attempts to determine the correct position of this cell
+    //
+    // If the cell was solved, returns a non-DOM-attached cell object that
+    // is pinned and has the correct direction set in, so you can call
+    // methods like toString() on it to display it to the user.
+    //
+    // If the cell was not successfully solved OR if the cell was
+    // already solved (i.e. pinned) and so no further solving is possible,
+    // returns null.
+    //
+    // TODO: this is needlessly inefficient
+    // since we still do the extra setup steps in the dummy return object,
+    // like setting up solve strategies and such.
+    // Would probably be more effective to return just the correct
+    // facing direction and cell type, and then set up some code
+    // that can display that
     attemptSolve() {
-        if (this.isPinned) return false; // Already solved, no change
+        if (this.isPinned) return null; // Already solved, no change
 
         for (const strategy of this.solveStrategies) {
             const correctFacingDirection = strategy(this);
 
             if (null !== correctFacingDirection) { // Strategy returned a valid answer
-                while (this.facingDirection !== correctFacingDirection) {
-                    this.rotate();
-                }
-                this.togglePinned();
-
-                return true;
+                // This feels hacky, but is a JS-legitimate way to get
+                // this object's actual class
+                const CellType = this.constructor;
+                
+                // Return cell object with null DOM element reference
+                return new CellType(null, correctFacingDirection, true);
             }
         }
 
@@ -312,7 +312,7 @@ class ElbowCell extends AbstractGridCell {
                         }
                     }
                 }
-                return null;
+                return null; 
             }
         );
     }
@@ -329,10 +329,10 @@ class ElbowCell extends AbstractGridCell {
     // @Override
     hasConnection(direction) {
         if (this.isPinned) {
-            if (Directions.rotateClockwise(this.facingDirection, 1) === direction
-             || Directions.rotateClockwise(this.facingDirection, 2) == direction) {
-                // When facingDirection is DOWN, connected directions are LEFT and UP
-                // So 1 and 2 clockwise 90°-rotations from facingDirection
+            if (Directions.rotateCounterclockwise(this.facingDirection, 1) === direction
+             || Directions.rotateCounterclockwise(this.facingDirection, 2) == direction) {
+                // When facingDirection is DOWN, connected directions are RIGHT and UP
+                // So 1 and 2 counterclockwise 90°-rotations from facingDirection
                 return true;
             }
             else return false;
@@ -386,7 +386,7 @@ class ThreeWayCell extends AbstractGridCell {
                         directionsNotConnected.delete(direction);
                     }
                 }
-                if (1 == directionsNotBlocked.size) {
+                if (1 == directionsNotConnected.size) {
                     // Last direction remaining must be blocked
                     // So T-cell must face in the opposite direction.
                     const [lastDirectionRemaining] = directionsNotConnected;
