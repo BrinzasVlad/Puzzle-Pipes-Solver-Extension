@@ -52,7 +52,7 @@ solverMenuPanel.id = "solverMenuPanel";
 
             // Kinda' hacky that we use these values here without saying
             // that we're borrowing them from solver.js
-            gridDisplayDiv.innerHTML = stringifyGrid(grid, GRID_HEIGHT, GRID_WIDTH, "<br>");
+            gridDisplayDiv.innerHTML = stringifyGrid(grid, "<br>");
         }
 
         showGridSubPanel.appendChild(refreshGridDisplayButton);
