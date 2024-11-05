@@ -38,6 +38,7 @@ const solverMenuPanel = createPipesSolverElement("div");
 solverMenuPanel.id = "solverMenuPanel";
     const showGridSubPanel = createPipesSolverElement("div");
     showGridSubPanel.id = "showGridSubPanel";
+    showGridSubPanel.classList.add("subPanel");
         const gridDisplayDiv = createPipesSolverElement("div");
         gridDisplayDiv.id = "gridDisplay";
 
@@ -59,23 +60,71 @@ solverMenuPanel.id = "solverMenuPanel";
         showGridSubPanel.appendChild(gridDisplayDiv);
     solverMenuPanel.appendChild(showGridSubPanel);
 
-    const solveCellTestButton = createPipesSolverElement("button");
-    solveCellTestButton.classList.add("button");
-    solveCellTestButton.id = "solveTestButton";
-    solveCellTestButton.innerText = "Test Solve";
-    solveCellTestButton.onclick = (clickEvent) => {
-        // Without preventDefault(), puzzle-pipes.com refreshes the page sort-of,
-        // which erases our nicely-added ASCII display
-        clickEvent.preventDefault();
+    const solveOneCellPanel = createPipesSolverElement("div");
+    solveOneCellPanel.id = "solveOneCellPanel";
+    solveOneCellPanel.classList.add("subPanel");
+        const solveOneCellSolutionPanel = createPipesSolverElement("div");
+        solveOneCellSolutionPanel.id = "solveOneCellSolutionPanel";
 
-        grid = scanGrid(); // Rescan grid
-        
-        const isSolveSuccessful = grid[0][0].attemptSolve();
-        console.log("Was the solve successful? " + (isSolveSuccessful ? "Yes" : "No"));
-        console.log("Tile is now " + (grid[0][0].isPinned ? "" : "NOT " + "pinned."));
-        console.log("Tile correct position: " + grid[0][0]);
-    }
-    solverMenuPanel.appendChild(solveCellTestButton);
+        const solveOneCellButton = createPipesSolverElement("button");
+        solveOneCellButton.classList.add("button");
+        solveOneCellButton.id = "solveOneCellButton";
+        solveOneCellButton.innerText = "Solve One Cell";
+        solveOneCellButton.onclick = (clickEvent) => {
+            // Without preventDefault(), puzzle-pipes.com refreshes the page sort-of,
+            // which erases our nicely-added ASCII display
+            clickEvent.preventDefault();
+
+            grid = scanGrid(); // Rescan grid, just in case
+            // TODO: if our listeners work well, we shouldn't need to rescan here
+            
+            // Iterate through all cells in grid
+            let solvedOne = false;
+            for (let cellIndex = 0; cellIndex < grid.height * grid.width; ++cellIndex) {
+                const colIndex = Math.floor(cellIndex / grid.width);
+                const rowIndex = cellIndex % grid.width;
+
+                // Try solving this cell
+                const solvedCell = grid[colIndex][rowIndex].attemptSolve();
+                if (solvedCell) {
+                    // Indicate correct alignment
+                    solveOneCellSolutionPanel.innerHTML =
+                        "You should align the cell at"
+                      + " [" + (colIndex + 1) + ", " + (rowIndex + 1) + "]"
+                      + " (highlighted in green)"
+                      + " like this:"
+                      + "<br>" + solvedCell;
+
+                    // Highlight cell
+                    const solvedCellDOMElement = grid[colIndex][rowIndex].DOMElement;
+                    solvedCellDOMElement.classList.add("pipesSolverHighlight");
+
+                    // Remove highlight on first user interaction with cell
+                    // FIXME: this does NOT cover cell edit via keyboard
+                    const removeHighlightListener = () => {
+                        solvedCellDOMElement.classList.remove("pipesSolverHighlight");
+                        solvedCellDOMElement.removeEventListener("click", removeHighlightListener);
+                        solvedCellDOMElement.addEventListener("contextMenu", removeHighlightListener);
+                    }
+                    solvedCellDOMElement.addEventListener("click", removeHighlightListener);
+                    solvedCellDOMElement.addEventListener("contextMenu", removeHighlightListener);
+                    // {once: true} wouldn't work, since we need to listen for either rotate OR pin
+
+                    // We found one solvable cell, take note and break out of loop
+                    solvedOne = true;
+                    break;
+                }
+            }
+
+            // Display failure message if we couldn't find a cell to solve
+            if (!solvedOne) {
+                solveOneCellSolutionPanel.innerText = "Our solver did not manage to solve any cell.";
+            }
+        }
+
+        solveOneCellPanel.appendChild(solveOneCellButton);
+        solveOneCellPanel.appendChild(solveOneCellSolutionPanel);
+    solverMenuPanel.appendChild(solveOneCellPanel);
 
 // ---------------------------------------------------------------
 // | Step 3: Insert our own buttons panel below the current ones |
