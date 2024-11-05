@@ -116,23 +116,29 @@ class BulbCell extends AbstractGridCell {
         // FIXME: feels wrong to declare these in the constructor
         this.solveStrategies.push(
             // AnyOneDirectionConnected strategy
-            (nubCell) => {
+            (bulbCell) => {
                 for (const direction of Directions) {
                     const backwardsDirection = Directions.opposite(direction);
-                    if (nubCell.neighbours[direction].hasConnection(backwardsDirection) === true) {
+                    if (bulbCell.neighbours[direction].hasConnection(backwardsDirection) === true) {
                         // Neighbour is pointing at us
                         return direction;
                     }
                 }
                 return null;
             },
-            // ThreeDirectionsBlocked strategy
-            (nubCell) => {
+            // ThreeDirectionsBlockedOrBulb strategy
+            (bulbCell) => {
                 const directionsNotBlocked = new Set(Directions.all());
                 for (const direction of Directions) {
                     const backwardsDirection = Directions.opposite(direction);
-                    if (nubCell.neighbours[direction].hasConnection(backwardsDirection) === false) {
+                    if (bulbCell.neighbours[direction].hasConnection(backwardsDirection) === false) {
                         // Neighbour connection to us is blocked
+                        directionsNotBlocked.delete(direction);
+                    }
+                    if (bulbCell.neighbours[direction] instanceof BulbCell) {
+                        // Neighbour is a bulb cell also
+                        // We cannot connect to them, else we'd have an isolated
+                        // Bulb-Bulb system cut off from the grid
                         directionsNotBlocked.delete(direction);
                     }
                 }
@@ -194,6 +200,22 @@ class LineCell extends AbstractGridCell {
                     if (lineCell.neighbours[direction].hasConnection(backwardsDirection) === false) {
                         // Neighbour walls us out
                         // So we must be perpendicular to its direction
+                        return Directions.rotateClockwise(direction);
+                    }
+                }
+                return null;
+            },
+            // LineCellBetweenOpposingBulbs strategy
+            (lineCell) => {
+                for (const direction of Directions) {
+                    const oppositeDirection = Directions.opposite(direction);
+                    if (lineCell.neighbours[direction] instanceof BulbCell
+                     && lineCell.neighbours[oppositeDirection] instanceof BulbCell
+                    ) {
+                        // Line cell cannot face in that direction.
+                        // Because if it did, we'd have a Bulb-Line-Bulb system
+                        // disconnected from the rest of the grid
+                        // Hence, it must face perpendicular to that.
                         return Directions.rotateClockwise(direction);
                     }
                 }
@@ -313,6 +335,55 @@ class ElbowCell extends AbstractGridCell {
                     }
                 }
                 return null; 
+            },
+            // TsOrElbowsWithCommonBaseMustFaceAway strategy
+            (elbowCell) => {
+                for (const direction of Directions) {
+                    const neighbour = elbowCell.neighbours[direction];
+                    if (neighbour instanceof ElbowCell || neighbour instanceof ThreeWayCell) {
+                        // Check if they are connected to a common base
+                        // Meaning this is connected to a cell,
+                        // and the three-way / elbow neighbour to another,
+                        // and those two cells are themselves connected.
+                        const baseDirections = [
+                            Directions.rotateClockwise(direction),
+                            Directions.rotateCounterclockwise(direction)
+                        ];
+                        for (const baseDirection of baseDirections) {
+                            const thisCellBaseNeighbour = elbowCell.neighbours[baseDirection];
+                            const otherCellBaseNeighbour = neighbour.neighbours[baseDirection];
+                            const backwardsDirection = Directions.opposite(baseDirection);
+                            if (
+                                // this cell is connected to base
+                                thisCellBaseNeighbour.hasConnection(backwardsDirection)
+                                // the other elbow / three-way cell is connected to base
+                             && otherCellBaseNeighbour.hasConnection(backwardsDirection)
+                                // the base cells are connected themselves
+                             && thisCellBaseNeighbour.hasConnection(direction)
+                            ) {
+                                // This cell and the other elbow/three-way have a common base
+                                // Hence, they cannot connect to one another
+                                // Because if they did, they would form a closed loop
+                                // Therefore, this cell must connect to the base (given)
+                                // and point away from the other elbow/three-way
+                                const firstConnectedDirection = baseDirection;
+                                const secondConnectedDirection = Directions.opposite(direction);
+                                if (secondConnectedDirection === Directions.rotateClockwise(firstConnectedDirection)) {
+                                    // As per 'default look', this cell must point
+                                    // opposite to firstConnectedDirection
+                                    // e.g. if first is UP and second is RIGHT,
+                                    // this must point DOWN
+                                    return Directions.opposite(firstConnectedDirection);
+                                }
+                                else {
+                                    // It means it's the opposite - first is 90° clockwise from second
+                                    return Directions.opposite(secondConnectedDirection);
+                                }
+                            }
+                        }
+                    }
+                }
+                return null;
             }
         );
     }
@@ -391,6 +462,43 @@ class ThreeWayCell extends AbstractGridCell {
                     // So T-cell must face in the opposite direction.
                     const [lastDirectionRemaining] = directionsNotConnected;
                     return Directions.opposite(lastDirectionRemaining);
+                }
+                return null;
+            },
+            // TsOrElbowsWithCommonBaseMustFaceAway strategy
+            (threeWayCell) => {
+                for (const direction of Directions) {
+                    const neighbour = threeWayCell.neighbours[direction];
+                    if (neighbour instanceof ElbowCell || neighbour instanceof ThreeWayCell) {
+                        // Check if they are connected to a common base
+                        // Meaning this is connected to a cell,
+                        // and the three-way / elbow neighbour to another,
+                        // and those two cells are themselves connected.
+                        const baseDirections = [
+                            Directions.rotateClockwise(direction),
+                            Directions.rotateCounterclockwise(direction)
+                        ];
+                        for (const baseDirection of baseDirections) {
+                            const thisCellBaseNeighbour = threeWayCell.neighbours[baseDirection];
+                            const otherCellBaseNeighbour = neighbour.neighbours[baseDirection];
+                            const backwardsDirection = Directions.opposite(baseDirection);
+                            if (
+                                // this cell is connected to base
+                                thisCellBaseNeighbour.hasConnection(backwardsDirection)
+                                // the other elbow / three-way cell is connected to base
+                             && otherCellBaseNeighbour.hasConnection(backwardsDirection)
+                                // the base cells are connected themselves
+                             && thisCellBaseNeighbour.hasConnection(direction)
+                            ) {
+                                // This cell and the other elbow/three-way have a common base
+                                // Hence, they cannot connect to one another
+                                // Because if they did, they would form a closed loop
+                                // Therefore, this cell must point the opposite direction
+                                // from the other elbow/three-way cell, as per 'default look'
+                                return Directions.opposite(direction);
+                            }
+                        }
+                    }
                 }
                 return null;
             }
